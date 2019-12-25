@@ -1,84 +1,122 @@
 INCLUDE Irvine32.inc
+
 main	EQU start@0
+
 .stack 4096
 
-BulletHit proto,aPosX:byte,aPosY:byte,bPosX:byte,bPosY:byte ;;;;;;«İ­×§ï
-DetectShoot proto								;°»´ú®gÀ» ª½±µ¨Ï¥Î ©I¥sBulletShoot
-BulletShoot proto,planeX:word,planeY:word		;¤Í¤è®gÀ» ©I¥sBulletMove
-BulletMove proto								;¤Í¤è¤l¼u²¾°Ê ©I¥sDetectMove
-DetectMove proto								;°»´ú²¾°Ê ª½±µ¨Ï¥Î ©I¥sMovRight,MovLeft
-MovRight proto									;¥k²¾
-MovLeft proto									;¥ª²¾
-AllyRevive proto								;¤Í¤è´_¬¡
-EnemyMove proto  									;¼Ä¤è²¾°Ê
-EnemyAttack proto,enemyX:word,enemyY:word 			;¼Ä¤è®gÀ» ©I¥sAttackMove
-AttackMove proto 									;¼Ä¤è¤l¼u²¾°Ê
-EnemyRevive proto									;¼Ä¤è´_¬¡
-WriteHP proto                                       ;Åã¥Ü¦å¶q
-;¢|¢y¢}
+DetectShoot proto								;åµæ¸¬å°„æ“Š ç›´æ¥ä½¿ç”¨ å‘¼å«BulletShoot
+BulletShoot proto,planeX:word,planeY:word		;å‹æ–¹å°„æ“Š å‘¼å«BulletMove
+BulletMove proto								;å‹æ–¹å­å½ˆç§»å‹• å‘¼å«DetectMove
+DetectMove proto								;åµæ¸¬ç§»å‹• ç›´æ¥ä½¿ç”¨ å‘¼å«MovRight,MovLeft
+MovRight proto									;å³ç§»
+MovLeft proto									;å·¦ç§»
+AllyRevive proto								;å‹æ–¹å¾©æ´»
+EnemyMove proto, enemyP:coord										;æ•µæ–¹ç§»å‹•
+EnemyAttack proto,enemyX:word,enemyY:word 			;æ•µæ–¹å°„æ“Š å‘¼å«AttackMove
+AttackMove proto 									;æ•µæ–¹å­å½ˆç§»å‹•
+EnemyRevive proto									;æ•µæ–¹å¾©æ´»
+WriteHP proto                                          ;é¡¯ç¤ºè¡€é‡
+WriteScore proto                                       ;é¡¯ç¤ºåˆ†æ•¸
+enemyDisappear proto, enemyP:coord
 .data
+titleStr byte "----- Plane War -----",0                ;ä¸»æ§å°è¦–çª—æ¨™é¡Œ
+
 startLogo0 byte "###############################################################################"
-startLogo1 byte "¢z¢w¢w¢w¢w¢w¢w¢w¢w¢w¢w¢w¢w¢w¢{        |====|  |====|  |====|        /====\       |===========|"
-startLogo2 byte "¢y   _______  ¢y       |    |  |    |  |    |       / ___  \      |           |"
-startLogo3 byte "¢y   |      | ¢y       |     \ |    |  /    |      / /   \  \     |  ======|  |"
-startLogo4 byte "¢y   ¢|¢w¢w¢w¢w¢w¢w¢} ¢y        \     \|    |/     /      /  ======  \    |  |_____|  |"
-startLogo5 byte "¢y   ¢z¢w¢w¢w¢w¢w¢w¢w¢w¢w¢}         \     =    =     /      /   ______   \   |  _____   _|"
-startLogo6 byte "¢y   |          ¢z¢w¢w¢w¢w¢w¢{   \              /      /   /      \   \  |  |    \  \ "
-startLogo7 byte "¢y___|          ¢|¢w¢w¢w¢w¢w¢}    \_____/\_____/      /___/        \___\ |__|     \__\"
+startLogo1 byte "|============-|        |====|  |====|  |====|        /====\       |===========|"
+startLogo2 byte "|   _______   |        |    |  |    |  |    |       / ___  \      |           |"
+startLogo3 byte "|   |      |  |        |     \ |    |  /    |      / /   \  \     |  ======|  |"
+startLogo4 byte "|   |------|  |         \     \|    |/     /      /  ======  \    |  |_____|  |"
+startLogo5 byte "|   __________|          \     =    =     /      /   ______   \   |  _____   _|"
+startLogo6 byte "|   |           |-----|   \              /      /   /      \   \  |  |    \  \ "
+startLogo7 byte "|___|           |_____|    \_____/\_____/      /___/        \___\ |__|     \__\"
 startLogo8 byte "###############################################################################"
 startLogo9 byte "                          --press 'g' to start--                               "
+startLogo10 byte "                      --press 'h' to introduction--                            "
 startColor word lengthof startLogo0 DUP (0Dh)
 startPos COORD <20,10>
-
+introduction1 byte "how to pilot the airplane:"
+introduction2 byte "left->press 'i', right->press 'p'."
+introduction3 byte "how to fire bullets:"
+introduction4 byte "press 's' for firing bullets."
+introduction5 byte "If you are hit by an enemy bullet, you will lose 100 HP."
+introduction6 byte "please press 'g' to start."
+introductionPos COORD <20,7>
+score word 1
 allyPlaneUp BYTE (4)DUP(20h),2Fh,2Bh,5Ch,(4)DUP(20h)
 allyPlaneMid1 BYTE (2)DUP(20h),2Fh,2Dh,7Ch,20h,7Ch,2Dh,5Ch,(2)DUP(20h)
 allyPlaneMid2 BYTE 2Fh,(2)DUP(2Dh),7Ch,(3)DUP(20h),7Ch,(2)DUP(2Dh),5Ch
 allyPlaneDown BYTE (2)DUP(20h),2Fh,2Dh,7Ch,3Dh,7Ch,2Dh,5Ch,(2)DUP(20h)
-;­¸¾÷¼Ë¦¡
-allyAttr WORD 11 DUP(0Bh)						;­¸¾÷ÃC¦â
-allyDisAttr WORD 11 DUP (00h)					;­¸¾÷®ø¥¢ÃC¦â
-allyPosition COORD <40,25>						;­¸¾÷ªì©l¦ì¸m
-allyCondition byte 1							;­¸¾÷ª¬ºA 1¬°¬¡µÛ,0¬°¦º±¼´_¬¡¤¤
+;é£›æ©Ÿæ¨£å¼
+allyAttr WORD 11 DUP(0Bh)						;é£›æ©Ÿé¡è‰²
+allyDisAttr WORD 11 DUP (00h)					;é£›æ©Ÿæ¶ˆå¤±é¡è‰²
+allyPosition COORD <40,25>						;é£›æ©Ÿåˆå§‹ä½ç½®
+allyCondition byte 1							;é£›æ©Ÿç‹€æ…‹ 1ç‚ºæ´»è‘—,0ç‚ºæ­»æ‰å¾©æ´»ä¸­
 
-allyHP dword 1000		    					;­¸¾÷¦å¶q
-allyScore word ?								;­¸¾÷±o¤À
+allyHP dword 500 		    					;é£›æ©Ÿè¡€é‡
+allyScore Dword 0								;é£›æ©Ÿå¾—åˆ†
 
-bullet byte '8'									;¤l¼u¼Ë¦¡
-bulletPos COORD <?,?>							;¤l¼u¦ì¸m
-bulletAttr word 0Bh								;¤l¼uÃC¦â
-bulletDisappearAttr word 00h					;¤l¼u®ø¥¢ÃC¦â
+bullet byte '8'									;å­å½ˆæ¨£å¼
+bulletPos COORD <?,?>							;å­å½ˆä½ç½®
+bulletAttr word 0Bh								;å­å½ˆé¡è‰²
+bulletDisappearAttr word 00h					;å­å½ˆæ¶ˆå¤±é¡è‰²
 
-enemyTop BYTE ' ',3 DUP('_')
-enemyBody BYTE 1 DUP('-\+/-')
-enemyBottom BYTE 1 DUP('  *')
-;¼Ä¤H­¸¾÷¼Ë¦¡
-enemyAttr word 5 DUP(0Ch)						;¼Ä¤H­¸¾÷ÃC¦â
-enemyDisappearAttr word 5 DUP(00h)				;¼Ä¤H­¸¾÷®ø¥¢ÃC¦â
-enemyPosition COORD <60,0>						;¼Ä¤H­¸¾÷ªì©l¦ì¸m
-enemyCondition byte 1							;¼Ä¤H­¸¾÷ª¬ºA 1¬°¬¡µÛ,0¬°³QÀ»¸¨
+enemyTop BYTE " ___ "
+enemyBody BYTE "-\*/-"
+enemyBottom BYTE "  *  "
+enemyDel byte "     "
+;æ•µäººé£›æ©Ÿæ¨£å¼
+enemyAttr word 5 DUP(0Ch)						;æ•µäººé£›æ©Ÿé¡è‰²
+enemyDisappearAttr word 5 DUP(00h)				;æ•µäººé£›æ©Ÿæ¶ˆå¤±é¡è‰²
+enemyPosition COORD <60,0>
+enemy1Position COORD <60,0>
+enemy2Position COORD <40,0>
+enemy3Position COORD <30,0>
+enemy4Position COORD <80,0>
+enemy5Position COORD <70,0>
+enemy6Position COORD <50,0>					    ;æ•µäººé£›æ©Ÿåˆå§‹ä½ç½®
+enemyCondition byte 1							;æ•µäººé£›æ©Ÿç‹€æ…‹ 1ç‚ºæ´»è‘—,0ç‚ºè¢«æ“Šè½
 
-Attack byte '.'									;¼Ä¤H¤l¼u¼Ë¦¡
-AttackPos COORD <?,?>							;¼Ä¤H¤l¼u¦ì¸m
-AttackAttr word 0Ah								;¼Ä¤H¤l¼uÃC¦â
-AttackDisappearAttr word 0						;¼Ä¤H¤l¼u®ø¥¢ÃC¦â
+Attack byte '.'									;æ•µäººå­å½ˆæ¨£å¼
+AttackPos COORD <?,?>							;æ•µäººå­å½ˆä½ç½®
+AttackAttr word 0Ah								;æ•µäººå­å½ˆé¡è‰²
+AttackDisappearAttr word 0						;æ•µäººå­å½ˆæ¶ˆå¤±é¡è‰²
 
-outputHandle DWORD 0 						;CONSOLE ±±¨îID
-bytesWritten DWORD ?						;¦^¶Ç
-count DWORD 0								;¦^¶Ç
-cellsWritten DWORD ?						;;;;;;«İ­×§ï
+outputHandle DWORD 0 						;CONSOLE æ§åˆ¶ID
+bytesWritten DWORD ?						;å›å‚³
+count DWORD 0								;å›å‚³
+cellsWritten DWORD ?						;;;;;;å¾…ä¿®æ”¹
 
-input byte ?									;ÅÜ¼Æ°»´ú¬O§_«öS
-inputMov byte ?									;ÅÜ¼Æ°»´ú¬O§_«öI P
-inputQuit byte ?								;ÅÜ¼Æ°»´ú¬O§_«öESC
+input byte ?									;è®Šæ•¸åµæ¸¬æ˜¯å¦æŒ‰S
+inputMov byte ?									;è®Šæ•¸åµæ¸¬æ˜¯å¦æŒ‰I P
+inputQuit byte ?								;è®Šæ•¸åµæ¸¬æ˜¯å¦æŒ‰ESC
 
-hp BYTE 1 DUP('HP: 1000')
-hpPosition COORD <1,1>                          ;HP: ¦ì¸m
-allyhpPosition COORD <5,1>                      ;¦å¶q­È¦ì¸m
-hpAttr word 10 DUP(0Ah)                         ;¦å¶qÅã¥ÜÃC¦â
-hpDisAttr WORD 1 DUP (00h)				    	;¦å¶q®ø¥¢ÃC¦â
+hp BYTE 'HP:'
+hpPosition COORD <1,1>                          ;HP:ä½ç½®
+allyhpPosition COORD <4,1>                      ;è¡€é‡å€¼ä½ç½®
+hpAttr word 3 DUP(0Ah)                         ;è¡€é‡é¡¯ç¤ºé¡è‰²
+
+Scorew BYTE "SCORE:"
+ScorePosition COORD <1,2>                          ;SCORE:ä½ç½®
+allyScorePosition COORD <7,2>                      ;åˆ†æ•¸å€¼ä½ç½®
+ScoreAttr word 6 DUP(0Ah)                         ;åˆ†æ•¸é¡¯ç¤ºé¡è‰²
+
+endLogo0 byte "###############################################################################"
+endLogo1 byte "||==|        |=========|  |========|  |========|  |========|     |=========|  |"
+endLogo2 byte "||  |        |  _____  |  |  ______|  |  ______|  |   __   |     |______   |  |"
+endLogo3 byte "||  |        |  |   |  |  |  |_____   |  |_____   |  |  |  |         ___|  |  |"
+endLogo4 byte "||  |        |  |   |  |  |_____   |  |   _____|  |  |__|  |        |   ___|  |"
+endLogo5 byte "||  |______  |  |___|  |   _____|  |  |  |______  |  ____  |        |__|      |"
+endLogo6 byte "||        |  |         |  |        |  |        |  |  |   \ \         __       |"
+endLogo7 byte "||========|  |=========|  |========|  |========|  |==|    \=\       |__|      |"
+endLogo8 byte "###############################################################################"
+endLogo9 byte "                          --press 'anychar' to end--                           "
+endColor word lengthof endLogo0 DUP (0Dh)
+endPos COORD <20,10>
+
 .code
 main proc
 
+	INVOKE SetConsoleTitle, offset titleStr        ;è¨­å®šä¸»æ§å°è¦–çª—æ¨™é¡Œ
 	INVOKE GetStdHandle, STD_OUTPUT_HANDLE
     mov outputHandle, eax
      INVOKE WriteConsoleOutputAttribute,
@@ -211,16 +249,125 @@ main proc
 		startPos,
 		offset bytesWritten
     inc startPos.Y
+    INVOKE WriteConsoleOutputAttribute,
+		outputHandle,
+		offset startColor,
+		lengthof startColor,
+		startPos,
+		offset count
+    INVOKE WriteConsoleOutputCharacter,
+		outputHandle,
+		offset startLogo10,
+		lengthof startLogo10,
+		startPos,
+		offset bytesWritten
     q:
     call ReadChar
     .if al=='g'
     call Clrscr
+    jmp start
+    .elseif al=='h'
+        jmp introduction
     .else
         jmp q
     .endif
+    introduction:
+        call Clrscr
+        INVOKE WriteConsoleOutputAttribute,
+		outputHandle,
+		offset startColor,
+		lengthof startColor,
+		introductionPos,
+		offset count
+    INVOKE WriteConsoleOutputCharacter,
+		outputHandle,
+		offset introduction1,
+		lengthof introduction1,
+		introductionPos,
+		offset bytesWritten
+    inc introductionPos.Y
+    INVOKE sleep,500
+    INVOKE WriteConsoleOutputAttribute,
+		outputHandle,
+		offset startColor,
+		lengthof startColor,
+		introductionPos,
+		offset count
+    INVOKE WriteConsoleOutputCharacter,
+		outputHandle,
+		offset introduction2,
+		lengthof introduction2,
+		introductionPos,
+		offset bytesWritten
+    add introductionPos.Y, 2
+    INVOKE sleep,500
+    INVOKE WriteConsoleOutputAttribute,
+		outputHandle,
+		offset startColor,
+		lengthof startColor,
+		introductionPos,
+		offset count
+    INVOKE WriteConsoleOutputCharacter,
+		outputHandle,
+		offset introduction3,
+		lengthof introduction3,
+		introductionPos,
+		offset bytesWritten
+    inc introductionPos.Y
+    INVOKE sleep,500
+    INVOKE WriteConsoleOutputAttribute,
+		outputHandle,
+		offset startColor,
+		lengthof startColor,
+		introductionPos,
+		offset count
+    INVOKE WriteConsoleOutputCharacter,
+		outputHandle,
+		offset introduction4,
+		lengthof introduction4,
+		introductionPos,
+		offset bytesWritten
+    add introductionPos.Y, 2
+    INVOKE sleep,500
+    INVOKE WriteConsoleOutputAttribute,
+		outputHandle,
+		offset startColor,
+		lengthof startColor,
+		introductionPos,
+		offset count
+    INVOKE WriteConsoleOutputCharacter,
+		outputHandle,
+		offset introduction5,
+		lengthof introduction5,
+		introductionPos,
+		offset bytesWritten
+    add introductionPos.Y, 3
+    INVOKE sleep,500
+    INVOKE WriteConsoleOutputAttribute,
+		outputHandle,
+		offset startColor,
+		lengthof startColor,
+		introductionPos,
+		offset count
+    INVOKE WriteConsoleOutputCharacter,
+		outputHandle,
+		offset introduction6,
+		lengthof introduction6,
+		introductionPos,
+		offset bytesWritten
+
+    p:
+    call ReadChar
+    .if al=='g'
+    call Clrscr
+    .else
+        jmp p
+    .endif
 
 
-	;Ã¸»sªì©l¤Í­x
+start:
+
+	;ç¹ªè£½åˆå§‹å‹è»
 	INVOKE WriteConsoleOutputAttribute,
 		outputHandle,
 		offset allyAttr,
@@ -273,51 +420,10 @@ main proc
 		allyPosition,
 		offset bytesWritten
 
-	sub allyPosition.Y,3										;y¶b½Õ¦^ªì©l¦ì¸m
+	sub allyPosition.Y, 3                  ;yè»¸èª¿å›åˆå§‹ä½ç½®
 
-	;Ã¸»sªì©l¼Ä¤H
-	INVOKE WriteConsoleOutputAttribute,
-		outputHandle,
-		offset enemyAttr,
-		sizeof enemyTop,
-		enemyPosition,
-		offset cellsWritten
-	INVOKE WriteConsoleOutputCharacter,
-		outputHandle,
-		offset enemyTop,
-		sizeof enemyTop,
-		enemyPosition,
-		offset count
-	inc enemyPosition.Y
-	INVOKE WriteConsoleOutputAttribute,
-		outputHandle,
-		offset enemyAttr,
-		sizeof enemyBody,
-		enemyPosition,
-		offset cellsWritten
-	INVOKE WriteConsoleOutputCharacter,
-		outputHandle,
-		offset enemyBody,
-		sizeof enemyBody,
-		enemyPosition,
-		offset count
-	inc enemyPosition.Y
-	INVOKE WriteConsoleOutputAttribute,
-		outputHandle,
-		offset enemyAttr,
-		sizeof enemyBottom,
-		enemyPosition,
-		offset cellsWritten
-	INVOKE WriteConsoleOutputCharacter,
-		outputHandle,
-		offset enemyBottom,
-		sizeof enemyBottom,
-		enemyPosition,
-		offset count
 
-	sub enemyPosition.Y, 2										;y¶b½Õ¦^ªì©l¦ì¸m
-
-	;Ã¸»sªì©l¦å¶q
+	;ç¹ªè£½åˆå§‹è¡€é‡
 	INVOKE WriteConsoleOutputAttribute,
 		outputHandle,
 		offset hpAttr,
@@ -330,27 +436,125 @@ main proc
 		sizeof hp,
 		hpPosition,
 		offset count
+	INVOKE SetConsoleCursorPosition,
+        outputHandle,
+		allyhpPosition
+	mov eax, allyHP
+	call WriteDec
+
+	;ç¹ªè£½åˆå§‹åˆ†æ•¸
+	INVOKE WriteConsoleOutputAttribute,
+		outputHandle,
+		offset ScoreAttr,
+		lengthof SCOREW,
+		ScorePosition,
+		offset bytesWritten
+	INVOKE WriteConsoleOutputCharacter,
+		outputHandle,
+		offset SCOREW,
+		lengthof SCOREW,
+		ScorePosition,
+		offset count
+	INVOKE SetConsoleCursorPosition,
+        outputHandle,
+		allyScorePosition
+	mov eax, allyScore
+	call WriteDec
 
 control:
-	.if input==VK_ESCAPE										;esc±j¨îµ²§ô
-		jmp theend
-	.endif
 
-	.IF enemyPosition.Y!=22
-		INVOKE EnemyMove										;©I¥s¼Ä¤H²¾°Ê
-		INVOKE EnemyAttack,enemyPosition.X,enemyPosition.Y		;©I¥s¼Ä¤H®gÀ»
-	.ENDIF
-	invoke DetectShoot											;°»´ú®gÀ»
-	invoke DetectMove											;°»´ú²¾°Ê
-	jmp control													;°j°éÅı¼Ä¤H¤U²¾
+    .if score>0
+		.if enemy1Position.Y>22
+			INVOKE enemyDisappear, enemy1Position
+            sub allyScore,1000
+            call WriteScore
+			mov ax, 100
+			call RandomRange
+            add ax,12
+            mov enemy1Position.X,ax
+            mov enemy1Position.Y,0
+        .endif
+		INVOKE EnemyMove,enemy1Position
+        inc enemy1Position.Y
+    .endif
+    .if score>4
+        .if enemy2Position.Y>22
+			INVOKE enemyDisappear, enemy2Position
+            sub allyScore,1000
+            call WriteScore
+            mov ax, 100
+            call RandomRange
+            add ax,12
+            mov enemy2Position.X,ax
+            mov enemy2Position.Y,0
+        .endif
+		INVOKE EnemyMove,enemy2Position
+        inc enemy2Position.Y
+    .endif
+    .if score>9
+        .if enemy3Position.Y>22
+            INVOKE enemyDisappear, enemy3Position
+            sub allyScore,1000
+            call WriteScore
+			mov ax, 100
+            call RandomRange
+            add ax,12
+            mov enemy3Position.X,ax
+            mov enemy3Position.Y,0
+        .endif
+		INVOKE EnemyMove,enemy3Position
+		inc enemy3Position.Y
+    .endif
+    .if score>14
+        .if enemy4Position.Y>22
+            INVOKE enemyDisappear, enemy4Position
+            sub allyScore,1000
+            call WriteScore
+			mov ax, 100
+            call RandomRange
+            add ax,12
+            mov enemy4Position.X,ax
+            mov enemy4Position.Y, 0
+		.endif
+		INVOKE EnemyMove,enemy4Position
+        inc enemy4Position.Y
+    .endif
+    .if score>19
+        .if enemy5Position.Y>22
+            INVOKE enemyDisappear, enemy5Position
+            sub allyScore,1000
+            call WriteScore
+			mov ax, 100
+			call RandomRange
+            add ax,12
+            mov enemy5Position.X,ax
+            mov enemy5Position.Y,0
+        .endif
+		INVOKE EnemyMove,enemy5Position
+        inc enemy5Position.Y
+    .endif
+    .if score>24
+        .if enemy6Position.Y>22
+            INVOKE enemyDisappear, enemy6Position
+            sub allyScore,1000
+            call WriteScore
+			mov ax, 100
+            call RandomRange
+            add ax,12
+            mov enemy6Position.X,ax
+            mov enemy6Position.Y,0
+        .endif
+		INVOKE EnemyMove,enemy6Position
+        inc enemy6Position.Y
+    .endif
 
-theend:
-INVOKE AllyRevive												;©I¥s°{Ã{µ²§ô
-	call WaitMsg
-exit
+	invoke DetectShoot											;åµæ¸¬å°„æ“Š
+	invoke DetectMove											;åµæ¸¬ç§»å‹•
+	jmp control													;è¿´åœˆè®“æ•µäººä¸‹ç§»
+
 main endp
 
-;Åã¥Ü¦å¶q
+;é¡¯ç¤ºè¡€é‡
 WriteHP proc
 	INVOKE WriteConsoleOutputAttribute,
 		outputHandle,
@@ -370,25 +574,32 @@ WriteHP proc
 	mov eax, allyHP
 	call WriteDec
 
-	add hpPosition.X, 7
-	INVOKE WriteConsoleOutputAttribute,     ;Åı1000ªº³Ì«á¤@­Ó0®ø¥¢
-		outputHandle,
-		offset hpDisAttr,
-		sizeof hp,
-		hpPosition,
-		offset cellsWritten
-	INVOKE WriteConsoleOutputCharacter,
-		outputHandle,
-		offset hp,
-		sizeof hp,
-		hpPosition,
-		offset count
-	sub hpPosition.X, 7
-
 	ret
 WriteHP endp
 
-;¤Í¤è°»´ú®gÀ»
+WriteScore proc
+		INVOKE WriteConsoleOutputAttribute,
+		outputHandle,
+		offset ScoreAttr,
+		lengthof SCOREW,
+		ScorePosition,
+		offset bytesWritten
+	INVOKE WriteConsoleOutputCharacter,
+		outputHandle,
+		offset SCOREW,
+		lengthof SCOREW,
+		ScorePosition,
+		offset count
+	INVOKE SetConsoleCursorPosition,
+        outputHandle,
+		allyScorePosition
+	mov eax, allyScore
+	call WriteDec
+
+	ret
+WriteScore endp
+
+;å‹æ–¹åµæ¸¬å°„æ“Š
 DetectShoot proc
     INVOKE Sleep,15
     call ReadKey
@@ -399,108 +610,245 @@ DetectShoot proc
 	ret
 DetectShoot endp
 
-;¤Í¤è¤l¼u®gÀ»
+;å‹æ–¹å­å½ˆå°„æ“Š
 BulletShoot proc USES eax edx ecx ebx,
 	planeX:word,
-	planeY:word                ;­n¶ÇplaneX,planeY
+	planeY:word                ;è¦å‚³planeX,planeY
 
     mov ax,planeX
     mov dx,planeY
-	add ax,5                   ;®y¼Ğ¾ô¦^¤l¼u¸Ó¥X²{ªº¦ì¸m
-	sub dx,4                   ;¦P¤W
+	add ax,5                   ;åº§æ¨™æ©‹å›å­å½ˆè©²å‡ºç¾çš„ä½ç½®
+	sub dx,4                   ;åŒä¸Š
     mov bulletPos.X,ax
     mov bulletPos.Y,dx
 
-	;½T»{¼Ä¤è¦³¨S¦³³Q§Ú¤è¤l¼u®g¤¤
-	mov cx, enemyPosition.X
-	mov bx, enemyPosition.Y     ;enemyPosition¦s¤J¼È¦s¾¹
-	inc bx
-    sub cx, bulletPos.X         ;cx¥Î©ó§PÂ_¤l¼uÀ»¤¤¼Ä¤è
+	;ç¢ºèªæ•µæ–¹æœ‰æ²’æœ‰è¢«æˆ‘æ–¹å­å½ˆå°„ä¸­
+        ;cxç”¨æ–¼åˆ¤æ–·å­å½ˆæ“Šä¸­æ•µæ–¹
 
 bulletup:
 	.if bulletPos.Y!=0
-		INVOKE BulletMove       ;¤l¼u¦V¤W²¾°Ê
+		INVOKE BulletMove       ;å­å½ˆå‘ä¸Šç§»å‹•
 		jmp checkX
 	.else
 		jmp endshoot
 	.endif
 checkX:
+	mov cx, enemy1Position.X
+	mov bx, enemy1Position.Y     ;enemyPositionå­˜å…¥æš«å­˜å™¨
+	inc bx
+        sub cx, bulletPos.X         ;cxç”¨æ–¼åˆ¤æ–·å­å½ˆæ“Šä¸­æ•µæ–¹
 	.if cx==0
-		jmp checkY
+		jmp check1Y
 	.elseif cx==-1
-		jmp checkY
+		jmp check1Y
 	.elseif cx==-2
-		jmp checkY
+		jmp check1Y
 	.elseif cx==-3
-		jmp checkY
+		jmp check1Y
 	.elseif cx==-4
-		jmp checkY
-	.else
-		jmp bulletup
+		jmp check1Y
 	.endif
-checkY:
+    mov cx, enemy2Position.X
+	mov bx, enemy2Position.Y     ;enemyPositionå­˜å…¥æš«å­˜å™¨
+	inc bx
+    sub cx, bulletPos.X
+	.if cx==0
+		jmp check2Y
+	.elseif cx==-1
+		jmp check2Y
+	.elseif cx==-2
+		jmp check2Y
+	.elseif cx==-3
+		jmp check2Y
+	.elseif cx==-4
+		jmp check2Y
+	.endif
+    mov cx, enemy3Position.X
+	mov bx, enemy3Position.Y     ;enemyPositionå­˜å…¥æš«å­˜å™¨
+	inc bx
+    sub cx, bulletPos.X
+	.if cx==0
+		jmp check3Y
+	.elseif cx==-1
+		jmp check3Y
+	.elseif cx==-2
+		jmp check3Y
+	.elseif cx==-3
+		jmp check3Y
+	.elseif cx==-4
+		jmp check3Y
+	.endif
+    mov cx, enemy4Position.X
+	mov bx, enemy4Position.Y     ;enemyPositionå­˜å…¥æš«å­˜å™¨
+	inc bx
+    sub cx, bulletPos.X
+	.if cx==0
+		jmp check4Y
+	.elseif cx==-1
+		jmp check4Y
+	.elseif cx==-2
+		jmp check4Y
+	.elseif cx==-3
+		jmp check4Y
+	.elseif cx==-4
+		jmp check4Y
+	.endif
+    mov cx, enemy5Position.X
+	mov bx, enemy5Position.Y     ;enemyPositionå­˜å…¥æš«å­˜å™¨
+	inc bx
+    sub cx, bulletPos.X
+	.if cx==0
+		jmp check5Y
+	.elseif cx==-1
+		jmp check5Y
+	.elseif cx==-2
+		jmp check5Y
+	.elseif cx==-3
+		jmp check5Y
+	.elseif cx==-4
+		jmp check5Y
+	.endif
+    mov cx, enemy6Position.X
+	mov bx, enemy6Position.Y     ;enemyPositionå­˜å…¥æš«å­˜å™¨
+	inc bx
+    sub cx, bulletPos.X
+       	.if cx==0
+		jmp check6Y
+	.elseif cx==-1
+		jmp check6Y
+	.elseif cx==-2
+		jmp check6Y
+	.elseif cx==-3
+		jmp check6Y
+	.elseif cx==-4
+		jmp check6Y
+    .else
+        jmp bulletup
+	.endif
+check1Y:
 	.if bulletPos.Y==bx
-		jmp enemyDisappear
-	.else
-		jmp bulletup
+		INVOKE enemyDisappear, enemy1Position
+        mov enemy1Position.Y,31
+	    jmp endshoot
+    .else
+        jmp bulletup
 	.endif
-enemyDisappear:
+check2Y:
+	.if bulletPos.Y==bx
+		INVOKE enemyDisappear, enemy2Position
+        mov enemy2Position.Y,31
+		jmp endshoot
+    .else
+        jmp bulletup
+	.endif
+check3Y:
+	.if bulletPos.Y==bx
+		INVOKE enemyDisappear, enemy3Position
+        mov enemy3Position.Y,31
+		jmp endshoot
+    .else
+        jmp bulletup
+	.endif
+check4Y:
+	.if bulletPos.Y==bx
+		INVOKE enemyDisappear, enemy4Position
+        mov enemy4Position.Y,31
+		jmp endshoot
+    .else
+        jmp bulletup
+	.endif
+check5Y:
+	.if bulletPos.Y==bx
+		INVOKE enemyDisappear, enemy5Position
+        mov enemy5Position.Y,31
+		jmp endshoot
+    .else
+        jmp bulletup
+	.endif
+check6Y:
+	.if bulletPos.Y==bx
+		INVOKE enemyDisappear, enemy6Position
+        mov enemy6Position.Y,31
+		jmp endshoot
+    .else
+        jmp bulletup
+	.endif
 
-	;­Y³Q®g¤¤¡Aenemy®ø¥¢
+
+endshoot:
+    ret
+BulletShoot endp
+
+enemyDisappear proc,
+        enemyP:coord
+    add allyScore,1000
+    call WriteScore
+	;è‹¥è¢«å°„ä¸­ï¼Œenemyæ¶ˆå¤±
+	dec enemyP.Y
 	INVOKE WriteConsoleOutputAttribute,
 		outputHandle,
 		offset enemyDisappearAttr,
 		sizeof enemyTop,
-		enemyPosition,
+		enemyP,
 		offset cellsWritten
 
 	INVOKE WriteConsoleOutputCharacter,
 		outputHandle,
 		offset enemyTop,
 		sizeof enemyTop,
-		enemyPosition,
+		enemyP,
 		offset count
 
-	inc enemyPosition.Y
+	inc enemyP.Y
 	INVOKE WriteConsoleOutputAttribute,
 		outputHandle,
 		offset enemyDisappearAttr,
 		sizeof enemyBody,
-		enemyPosition,
+		enemyP,
 		offset cellsWritten
 
 	INVOKE WriteConsoleOutputCharacter,
 		outputHandle,
 		offset enemyBody,
 		sizeof enemyBody,
-		enemyPosition,
+		enemyP,
 		offset count
 
-	inc enemyPosition.Y
+	inc enemyP.Y
 	INVOKE WriteConsoleOutputAttribute,
 		outputHandle,
 		offset enemyDisappearAttr,
 		sizeof enemyBottom,
-		enemyPosition,
+		enemyP,
 		offset cellsWritten
 
 	INVOKE WriteConsoleOutputCharacter,
 		outputHandle,
 		offset enemyBottom,
 		sizeof enemyBottom,
-		enemyPosition,
+		enemyP,
 		offset count
+		inc enemyP.Y
+	INVOKE WriteConsoleOutputAttribute,
+		outputHandle,
+		offset enemyDisappearAttr,
+		sizeof enemyDel,
+		enemyP,
+		offset cellsWritten
 
-	INVOKE Sleep,500                  ;µ¥«İ
-	mov enemyPosition.Y, -1           ;enemy¾ô¦^¥¿½T¦ì¸m
-
-endshoot:
-    ret
-BulletShoot endp
-
-;¤Í¤è¤l¼u²¾°Ê
+	INVOKE WriteConsoleOutputCharacter,
+		outputHandle,
+		offset enemyDel,
+		sizeof enemyDel,
+		enemyP,
+		offset count
+        mov enemyP.Y,23
+	INVOKE Sleep,8                  ;ç­‰å¾…
+	ret
+enemyDisappear endp
+;å‹æ–¹å­å½ˆç§»å‹•
 BulletMove proc USES eax ebx ecx edx
-	;¤l¼uÃ¸»s
+	;å­å½ˆç¹ªè£½
 	INVOKE WriteConsoleOutputAttribute,
        outputHandle,
        offset bulletAttr,
@@ -514,10 +862,10 @@ BulletMove proc USES eax ebx ecx edx
        bulletPos,
 	   offset bytesWritten
 
-	INVOKE Sleep,50
-	invoke DetectMove					;¤l¼u¦b­¸ªº¦P®É¡A°»´ú²¾°Ê
+	INVOKE Sleep,15
+	INVOKE DetectMove					;å­å½ˆåœ¨é£›çš„åŒæ™‚ï¼Œåµæ¸¬ç§»å‹•
 
-	;¤l¼u®ø¥¢
+	;å­å½ˆæ¶ˆå¤±
     INVOKE WriteConsoleOutputAttribute,
       outputHandle,
       offset bulletDisappearAttr,
@@ -531,22 +879,22 @@ BulletMove proc USES eax ebx ecx edx
        bulletPos,
 	   offset bytesWritten
 
-    dec bulletPos.Y						;¤l¼u®y¼Ğ¤W²¾¤@®æ
+    dec bulletPos.Y						;å­å½ˆåº§æ¨™ä¸Šç§»ä¸€æ ¼
     ret
 BulletMove endp
 
-;¸}¦â´_¬¡°{Ã{¡AµLªk®gÀ»²¾°Ê
+;è…³è‰²å¾©æ´»é–ƒçˆï¼Œç„¡æ³•å°„æ“Šç§»å‹•
 AllyRevive proc uses ecx
 INVOKE GetStdHandle, STD_OUTPUT_HANDLE
     mov outputHandle, eax
     ;call Clrscr
 
-    mov allyCondition,0;				;¨S¥Î¨ì
+    mov allyCondition,0;				;æ²’ç”¨åˆ°
 	mov ecx,3
 
 blink:
 	push ecx
-    ;­¸¾÷Ã¸»s
+    ;é£›æ©Ÿç¹ªè£½
     INVOKE WriteConsoleOutputAttribute,
 		outputHandle,
 		offset allyAttr,
@@ -599,10 +947,10 @@ blink:
 		allyPosition,
 		offset bytesWritten
 
-	sub allyPosition.Y,3					;y¶b½Õ¦^ªì©l¦ì¸m
-	invoke Sleep,300						;©µ¿ğ°{Ã{
+	sub allyPosition.Y,3					;yè»¸èª¿å›åˆå§‹ä½ç½®
+	invoke Sleep,300						;å»¶é²é–ƒçˆ
 
-	;­¸¾÷µ²§ôÀ¿°£
+	;é£›æ©ŸçµæŸæ“¦é™¤
 	INVOKE WriteConsoleOutputAttribute,
 		outputHandle,
 		offset allyDisAttr,
@@ -655,7 +1003,7 @@ blink:
 		allyPosition,
 		offset bytesWritten
 
-	sub allyPosition.Y,3					;y¶b½Õ¦^ªì©l¦ì¸m
+	sub allyPosition.Y,3					;yè»¸èª¿å›åˆå§‹ä½ç½®
 
 	invoke DetectShoot
 	invoke DetectMove
@@ -664,30 +1012,225 @@ blink:
        pop ecx
        dec ecx
     .IF ecx!=0
-        jmp blink							;°{Ã{°j°é¤T¦¸
+        jmp blink							;é–ƒçˆè¿´åœˆä¸‰æ¬¡
     .ENDIF
 
-    mov allyCondition,1						;¨S¥Î¨ì
+	INVOKE WriteConsoleOutputAttribute,
+		outputHandle,
+		offset allyAttr,
+		lengthof allyAttr,
+		allyPosition,
+		offset count
+    INVOKE WriteConsoleOutputCharacter,
+		outputHandle,
+		offset allyPlaneUp,
+		lengthof allyPlaneUp,
+		allyPosition,
+		offset bytesWritten
+    inc allyPosition.Y
+    INVOKE WriteConsoleOutputAttribute,
+		outputHandle,
+		offset allyAttr,
+		lengthof allyAttr,
+		allyPosition,
+		offset count
+    INVOKE WriteConsoleOutputCharacter,
+		outputHandle,
+		offset allyPlaneMid1,
+		lengthof allyPlaneMid1,
+		allyPosition,
+		offset bytesWritten
+	inc allyPosition.Y
+    INVOKE WriteConsoleOutputAttribute,
+		outputHandle,
+		offset allyAttr,
+		lengthof allyAttr,
+		allyPosition,
+		offset count
+    INVOKE WriteConsoleOutputCharacter,
+		outputHandle,
+		offset allyPlaneMid2,
+		lengthof allyPlaneMid2,
+		allyPosition,
+		offset bytesWritten
+	inc allyPosition.Y
+    INVOKE WriteConsoleOutputAttribute,
+		outputHandle,
+		offset allyAttr,
+		lengthof allyAttr,
+		allyPosition,
+		offset count
+    INVOKE WriteConsoleOutputCharacter,
+		outputHandle,
+		offset allyPlaneDown,
+		lengthof allyPlaneDown,
+		allyPosition,
+		offset bytesWritten
+
+	sub allyPosition.Y,3					;yè»¸èª¿å›åˆå§‹ä½ç½®
+.if allyHP==0
+theend:
+
+	call Clrscr
+
+	INVOKE WriteConsoleOutputAttribute,
+		outputHandle,
+		offset endColor,
+		lengthof endColor,
+		endPos,
+		offset count
+    INVOKE WriteConsoleOutputCharacter,
+		outputHandle,
+		offset endLogo0,
+		lengthof endLogo0,
+		endPos,
+		offset bytesWritten
+    inc endPos.Y
+    INVOKE WriteConsoleOutputAttribute,
+		outputHandle,
+		offset endColor,
+		lengthof endColor,
+		endPos,
+		offset count
+    INVOKE WriteConsoleOutputCharacter,
+		outputHandle,
+		offset endLogo1,
+		lengthof endLogo1,
+		endPos,
+		offset bytesWritten
+    inc endPos.Y
+    INVOKE WriteConsoleOutputAttribute,
+		outputHandle,
+		offset endColor,
+		lengthof endColor,
+		endPos,
+		offset count
+    INVOKE WriteConsoleOutputCharacter,
+		outputHandle,
+		offset endLogo2,
+		lengthof endLogo2,
+		endPos,
+		offset bytesWritten
+    inc endPos.Y
+    INVOKE WriteConsoleOutputAttribute,
+		outputHandle,
+		offset endColor,
+		lengthof endColor,
+		endPos,
+		offset count
+    INVOKE WriteConsoleOutputCharacter,
+		outputHandle,
+		offset endLogo3,
+		lengthof endLogo3,
+		endPos,
+		offset bytesWritten
+    inc endPos.Y
+    INVOKE WriteConsoleOutputAttribute,
+		outputHandle,
+		offset endColor,
+		lengthof endColor,
+		endPos,
+		offset count
+    INVOKE WriteConsoleOutputCharacter,
+		outputHandle,
+		offset endLogo4,
+		lengthof endLogo4,
+		endPos,
+		offset bytesWritten
+    inc endPos.Y
+    INVOKE WriteConsoleOutputAttribute,
+		outputHandle,
+		offset endColor,
+		lengthof endColor,
+		endPos,
+		offset count
+    INVOKE WriteConsoleOutputCharacter,
+		outputHandle,
+		offset endLogo5,
+		lengthof endLogo5,
+		endPos,
+		offset bytesWritten
+    inc endPos.Y
+    INVOKE WriteConsoleOutputAttribute,
+		outputHandle,
+		offset endColor,
+		lengthof endColor,
+		endPos,
+		offset count
+    INVOKE WriteConsoleOutputCharacter,
+		outputHandle,
+		offset endLogo6,
+		lengthof endLogo6,
+		endPos,
+		offset bytesWritten
+    inc endPos.Y
+    INVOKE WriteConsoleOutputAttribute,
+		outputHandle,
+		offset endColor,
+		lengthof endColor,
+		endPos,
+		offset count
+    INVOKE WriteConsoleOutputCharacter,
+		outputHandle,
+		offset endLogo7,
+		lengthof endLogo7,
+		endPos,
+		offset bytesWritten
+    inc endPos.Y
+    INVOKE WriteConsoleOutputAttribute,
+		outputHandle,
+		offset endColor,
+		lengthof endColor,
+		endPos,
+		offset count
+    INVOKE WriteConsoleOutputCharacter,
+		outputHandle,
+		offset endLogo8,
+		lengthof endLogo8,
+		endPos,
+		offset bytesWritten
+    inc endPos.Y
+    INVOKE WriteConsoleOutputAttribute,
+		outputHandle,
+		offset endColor,
+		lengthof endColor,
+		endPos,
+		offset count
+    INVOKE WriteConsoleOutputCharacter,
+		outputHandle,
+		offset endLogo9,
+		lengthof endLogo9,
+		endPos,
+		offset bytesWritten
+
+call WaitMsg
+exit
+.else
+keepgo:
+    mov allyCondition,1
+.endif					;æ²’ç”¨åˆ°
     ret
+
 AllyRevive endp
 
-;°»´ú²¾°Ê
+;åµæ¸¬ç§»å‹•
 DetectMove proc
     INVOKE Sleep,15
     call ReadKey
     mov inputMov,al
-.if inputMov=='i'
-    INVOKE MovLeft
-.elseif inputMov=='p'
-    INVOKE MovRight
-.endif
+
+	.if inputMov=='i'
+		INVOKE MovLeft
+	.elseif inputMov=='p'
+		INVOKE MovRight
+	.endif
     ret
 DetectMove endp
 ;;;;;;;;;;;;;;;;;;;
 
-;¦V¥k²¾°Ê
+;å‘å³ç§»å‹•
 MovRight proc
-	;À¿±¼­ì³B
+	;æ“¦æ‰åŸè™•
 	INVOKE WriteConsoleOutputAttribute,
 		outputHandle,
 		offset allyDisAttr,
@@ -743,7 +1286,7 @@ MovRight proc
 	sub allyPosition.Y,3
 	INC allyPosition.X
 
-	;­«·sÃ¸»s
+	;é‡æ–°ç¹ªè£½
 L5:	INVOKE WriteConsoleOutputAttribute,
 		outputHandle,
 		offset allyAttr,
@@ -801,9 +1344,9 @@ L5:	INVOKE WriteConsoleOutputAttribute,
     ret
 MovRight endp
 
-;¦V¥ª²¾°Ê
+;å‘å·¦ç§»å‹•
 MovLeft proc
-	;À¿±¼­ì³B
+	;æ“¦æ‰åŸè™•
 	INVOKE WriteConsoleOutputAttribute,
 		outputHandle,
 		offset allyDisAttr,
@@ -859,7 +1402,7 @@ MovLeft proc
 	sub allyPosition.Y,3
 	DEC allyPosition.X
 
-	;­«·sÃ¸»s
+	;é‡æ–°ç¹ªè£½
 L5:	INVOKE WriteConsoleOutputAttribute,
 		outputHandle,
 		offset allyAttr,
@@ -917,118 +1460,136 @@ L5:	INVOKE WriteConsoleOutputAttribute,
 	ret
 MovLeft endp
 
-;¼Ä¤è²¾°Ê
-EnemyMove proc
+;æ•µæ–¹ç§»å‹•
+EnemyMove proc USES eax ebx ecx edx,
+    enemyP:coord
+    add score,1
+
+	INVOKE Sleep,15
+
+	dec enemyP.Y
 	INVOKE WriteConsoleOutputAttribute,
 		outputHandle,
 		offset enemyDisappearAttr,
 		sizeof enemyTop,
-		enemyPosition,
+		enemyP,
 		offset cellsWritten
+
 	INVOKE WriteConsoleOutputCharacter,
 		outputHandle,
 		offset enemyTop,
 		sizeof enemyTop,
-		enemyPosition,
+		enemyP,
 		offset count
-	inc enemyPosition.Y
+
+	inc enemyP.Y
+
 	INVOKE WriteConsoleOutputAttribute,
 		outputHandle,
 		offset enemyDisappearAttr,
 		sizeof enemyBody,
-		enemyPosition,
+		enemyP,
 		offset cellsWritten
+
 	INVOKE WriteConsoleOutputCharacter,
 		outputHandle,
 		offset enemyBody,
 		sizeof enemyBody,
-		enemyPosition,
+		enemyP,
 		offset count
-	inc enemyPosition.Y    ; next line
+
+	inc enemyP.Y    ; next line
+
 	INVOKE WriteConsoleOutputAttribute,
 		outputHandle,
 		offset enemyDisappearAttr,
 		sizeof enemyBottom,
-		enemyPosition,
+		enemyP,
 		offset cellsWritten
+
 	INVOKE WriteConsoleOutputCharacter,
 		outputHandle,
 		offset enemyBottom,
 		sizeof enemyBottom,
-		enemyPosition,
+		enemyP,
 		offset count
 
-	invoke DetectShoot
-	invoke DetectMove
-	dec enemyPosition.Y
+    dec enemyP.Y
 
 	INVOKE WriteConsoleOutputAttribute,
 		outputHandle,
 		offset enemyAttr,
 		sizeof enemyTop,
-		enemyPosition,
+		enemyP,
 		offset cellsWritten
+
 	INVOKE WriteConsoleOutputCharacter,
 		outputHandle,
 		offset enemyTop,
 		sizeof enemyTop,
-		enemyPosition,
+		enemyP,
 		offset count
-	inc enemyPosition.Y
+
+	inc enemyP.Y
+
 	INVOKE WriteConsoleOutputAttribute,
 		outputHandle,
 		offset enemyAttr,
 		sizeof enemyBody,
-		enemyPosition,
+		enemyP,
 		offset cellsWritten
+
 	INVOKE WriteConsoleOutputCharacter,
 		outputHandle,
 		offset enemyBody,
 		sizeof enemyBody,
-		enemyPosition,
+		enemyP,
 		offset count
-	inc enemyPosition.Y
+
+	inc enemyP.Y    ; next line
+
 	INVOKE WriteConsoleOutputAttribute,
 		outputHandle,
 		offset enemyAttr,
 		sizeof enemyBottom,
-		enemyPosition,
+		enemyP,
 		offset cellsWritten
+
 	INVOKE WriteConsoleOutputCharacter,
 		outputHandle,
 		offset enemyBottom,
 		sizeof enemyBottom,
-		enemyPosition,
+		enemyP,
 		offset count
 
-    sub enemyPosition.Y,2
-
+sub enemyP.Y, 2
+INVOKE EnemyAttack,enemyP.X,enemyP.Y		;å‘¼å«æ•µäººå°„æ“Š
     ret
 EnemyMove endp
 
-;¼Ä¤è®gÀ»
+;æ•µæ–¹å°„æ“Š
 EnemyAttack proc USES eax edx ecx ebx ,enemyX:word,enemyY:word
 
     mov ax,enemyX
-    mov dx,enemyY					;¶Ç¤JenemyPosition
-	add ax,2						;®y¼Ğ²¾°Ê¨ì¤l¼u¸Ó¥X²{ªº¦ì¸m
+    mov dx,enemyY					;å‚³å…¥enemyPosition
+	add ax,2						;åº§æ¨™ç§»å‹•åˆ°å­å½ˆè©²å‡ºç¾çš„ä½ç½®
 	add dx,3
     mov AttackPos.X,ax
-    mov AttackPos.Y,dx				;¦ì¸m¦s¤JAttackPos
+    mov AttackPos.Y,dx				;ä½ç½®å­˜å…¥AttackPos
 
 keep:
-	.if AttackPos.Y==20
+	.if AttackPos.Y==22
 		mov bx,allyPosition.Y
-		mov cx,allyPosition.X			;allyPosition¦s¤J¼È¦s¾¹
-		sub cx,AttackPos.X				;cx¥Î©ó§PÂ_¤l¼uÀ»¤¤­¸¾÷
+		mov cx,allyPosition.X			;allyPositionå­˜å…¥æš«å­˜å™¨
+		sub cx,AttackPos.X				;cxç”¨æ–¼åˆ¤æ–·å­å½ˆæ“Šä¸­é£›æ©Ÿ
 	.endif
-	.IF AttackPos.Y!=40				;¤l¼u³Ì²×¦ì¸m
-		INVOKE AttackMove			;©I¥s¤l¼u²¾°Ê
+	.IF AttackPos.Y!=30				;å­å½ˆæœ€çµ‚ä½ç½®
+		INVOKE AttackMove			;å‘¼å«å­å½ˆç§»å‹•
 		jmp LOO
 	.ELSE
 		jmp endAttack
 	.ENDIF
-LOO:								;§PÂ_¤l¼uÀ»¤¤­¸¾÷X¶b
+LOO:								;åˆ¤æ–·å­å½ˆæ“Šä¸­é£›æ©ŸXè»¸
 	.if cx == -1
 		jmp enddd
 	.elseif cx == -2
@@ -1057,58 +1618,56 @@ LOO:								;§PÂ_¤l¼uÀ»¤¤­¸¾÷X¶b
 		jmp keep
 	.endif
 enddd:
-	.if AttackPos.Y==bx			;¶i¤@¨B§PÂ_¤l¼uÀ»¤¤­¸¾÷Y¶b
-		sub allyHP,50           ;À»¤¤¡A´î¤Ö¦å¶q
-		INVOKE WriteHP          ;Åã¥Ü¦å¶q
+	.if AttackPos.Y==bx			;é€²ä¸€æ­¥åˆ¤æ–·å­å½ˆæ“Šä¸­é£›æ©ŸYè»¸
+		sub allyHP,100           ;æ“Šä¸­ï¼Œæ¸›å°‘è¡€é‡
+		INVOKE WriteHP          ;é¡¯ç¤ºè¡€é‡
 		jmp endddd
 	.else
 		jmp keep
 	.endif
 endddd:
-	.if allyCondition==1		;¶i¤@¨B§PÂ_­¸¾÷¬O§_³B©óµL¼Äª¬ºA
-		invoke AllyRevive		;©I¥s³QÀ»¤¤°{Ã{
+	.if allyCondition==1		;é€²ä¸€æ­¥åˆ¤æ–·é£›æ©Ÿæ˜¯å¦è™•æ–¼ç„¡æ•µç‹€æ…‹
+		invoke AllyRevive		;å‘¼å«è¢«æ“Šä¸­é–ƒçˆ
 		jmp endAttack
 	.endif
 endAttack:
     ret
 EnemyAttack endp
 
-;¼Ä¤H¤l¼u²¾°Ê
+;æ•µäººå­å½ˆç§»å‹•
 AttackMove proc USES eax ebx ecx edx
-	;Ã¸»s¤l¼u
+	;ç¹ªè£½å­å½ˆ
 	INVOKE WriteConsoleOutputAttribute,
 		outputHandle,
-		ADDR AttackAttr,
+		offset AttackAttr,
 		1,
 		AttackPos,
-		addr cellsWritten
+		offset cellsWritten
 	INVOKE WriteConsoleOutputCharacter,
 		outputHandle,
-		ADDR Attack,
+		offset Attack,
 		1,
 		AttackPos,
-		addr count
-	invoke DetectShoot
-	invoke DetectMove
+		offset count
+	INVOKE DetectShoot
+	INVOKE DetectMove
 	INVOKE Sleep,10
-	;À¿°£¤l¼u
+	;æ“¦é™¤å­å½ˆ
 	INVOKE WriteConsoleOutputAttribute,
 		outputHandle,
-		ADDR AttackDisappearAttr,
+		offset AttackDisappearAttr,
 		1,
 		AttackPos,
-		addr cellsWritten
+		offset cellsWritten
 	INVOKE WriteConsoleOutputCharacter,
 		outputHandle,
-		ADDR Attack,
+		offset Attack,
 		1,
 		AttackPos,
-		addr count
+		offset count
 
-    inc AttackPos.Y				;¼W¥[¤l¼uY¶b ©¹¤U­¸
+    inc AttackPos.Y				;å¢åŠ å­å½ˆYè»¸ å¾€ä¸‹é£›
 
     ret
 AttackMove endp
-
 end main
-

@@ -1,8 +1,8 @@
 INCLUDE Irvine32.inc
 main	EQU start@0
 .stack 4096
-BulletHit proto,aPosX:byte,aPosY:byte,bPosX:byte,bPosY:byte ;;;;;;待修改
 
+BulletHit proto,aPosX:byte,aPosY:byte,bPosX:byte,bPosY:byte ;;;;;;待修改
 DetectShoot proto								;偵測射擊 直接使用 呼叫BulletShoot
 BulletShoot proto,planeX:word,planeY:word		;友方射擊 呼叫BulletMove
 BulletMove proto								;友方子彈移動 呼叫DetectMove
@@ -10,13 +10,25 @@ DetectMove proto								;偵測移動 直接使用 呼叫MovRight,MovLeft
 MovRight proto									;右移
 MovLeft proto									;左移
 AllyRevive proto								;友方復活
-
 EnemyMove proto  									;敵方移動
 EnemyAttack proto,enemyX:word,enemyY:word 			;敵方射擊 呼叫AttackMove
 AttackMove proto 									;敵方子彈移動
 EnemyRevive proto									;敵方復活
-
+WriteHP proto                                       ;顯示血量
+;└▕┘
 .data
+startLogo0 byte "###############################################################################"
+startLogo1 byte "┌─────────────┐        |====|  |====|  |====|        /====\       |===========|"
+startLogo2 byte "▕   _______  ▕       |    |  |    |  |    |       / ___  \      |           |"
+startLogo3 byte "▕   |      | ▕       |     \ |    |  /    |      / /   \  \     |  ======|  |"
+startLogo4 byte "▕   └──────┘ ▕        \     \|    |/     /      /  ======  \    |  |_____|  |"
+startLogo5 byte "▕   ┌─────────┘         \     =    =     /      /   ______   \   |  _____   _|"
+startLogo6 byte "▕   |          ┌─────┐   \              /      /   /      \   \  |  |    \  \ "
+startLogo7 byte "▕___|          └─────┘    \_____/\_____/      /___/        \___\ |__|     \__\"
+startLogo8 byte "###############################################################################"
+startLogo9 byte "                          --press 'g' to start--                               "
+startColor word lengthof startLogo0 DUP (0Dh)
+startPos COORD <20,10>
 
 allyPlaneUp BYTE (4)DUP(20h),2Fh,2Bh,5Ch,(4)DUP(20h)
 allyPlaneMid1 BYTE (2)DUP(20h),2Fh,2Dh,7Ch,20h,7Ch,2Dh,5Ch,(2)DUP(20h)
@@ -28,14 +40,13 @@ allyDisAttr WORD 11 DUP (00h)					;飛機消失顏色
 allyPosition COORD <40,25>						;飛機初始位置
 allyCondition byte 1							;飛機狀態 1為活著,0為死掉復活中
 
-allyHealth byte ?								;飛機生命
+allyHP dword 1000		    					;飛機血量
 allyScore word ?								;飛機得分
 
 bullet byte '8'									;子彈樣式
 bulletPos COORD <?,?>							;子彈位置
 bulletAttr word 0Bh								;子彈顏色
 bulletDisappearAttr word 00h					;子彈消失顏色
-
 
 enemyTop BYTE ' ',3 DUP('_')
 enemyBody BYTE 1 DUP('-\+/-')
@@ -60,12 +71,154 @@ input byte ?									;變數偵測是否按S
 inputMov byte ?									;變數偵測是否按I P
 inputQuit byte ?								;變數偵測是否按ESC
 
+hp BYTE 1 DUP('HP: 1000')
+hpPosition COORD <1,1>                          ;HP: 位置
+allyhpPosition COORD <5,1>                      ;血量值位置
+hpAttr word 10 DUP(0Ah)                         ;血量顯示顏色
+hpDisAttr WORD 1 DUP (00h)				    	;血量消失顏色
 .code
 main proc
 
 	INVOKE GetStdHandle, STD_OUTPUT_HANDLE
     mov outputHandle, eax
+     INVOKE WriteConsoleOutputAttribute,
+		outputHandle,
+		offset startColor,
+		lengthof startColor,
+		startPos,
+		offset count
+    INVOKE WriteConsoleOutputCharacter,
+		outputHandle,
+		offset startLogo0,
+		lengthof startLogo0,
+		startPos,
+		offset bytesWritten
+    inc startPos.Y
+    INVOKE WriteConsoleOutputAttribute,
+		outputHandle,
+		offset startColor,
+		lengthof startColor,
+		startPos,
+		offset count
+    INVOKE WriteConsoleOutputCharacter,
+		outputHandle,
+		offset startLogo1,
+		lengthof startLogo1,
+		startPos,
+		offset bytesWritten
+    inc startPos.Y
+    INVOKE WriteConsoleOutputAttribute,
+		outputHandle,
+		offset startColor,
+		lengthof startColor,
+		startPos,
+		offset count
+    INVOKE WriteConsoleOutputCharacter,
+		outputHandle,
+		offset startLogo2,
+		lengthof startLogo2,
+		startPos,
+		offset bytesWritten
+    inc startPos.Y
+    INVOKE WriteConsoleOutputAttribute,
+		outputHandle,
+		offset startColor,
+		lengthof startColor,
+		startPos,
+		offset count
+    INVOKE WriteConsoleOutputCharacter,
+		outputHandle,
+		offset startLogo3,
+		lengthof startLogo3,
+		startPos,
+		offset bytesWritten
+    inc startPos.Y
+    INVOKE WriteConsoleOutputAttribute,
+		outputHandle,
+		offset startColor,
+		lengthof startColor,
+		startPos,
+		offset count
+    INVOKE WriteConsoleOutputCharacter,
+		outputHandle,
+		offset startLogo4,
+		lengthof startLogo4,
+		startPos,
+		offset bytesWritten
+    inc startPos.Y
+    INVOKE WriteConsoleOutputAttribute,
+		outputHandle,
+		offset startColor,
+		lengthof startColor,
+		startPos,
+		offset count
+    INVOKE WriteConsoleOutputCharacter,
+		outputHandle,
+		offset startLogo5,
+		lengthof startLogo5,
+		startPos,
+		offset bytesWritten
+    inc startPos.Y
+    INVOKE WriteConsoleOutputAttribute,
+		outputHandle,
+		offset startColor,
+		lengthof startColor,
+		startPos,
+		offset count
+    INVOKE WriteConsoleOutputCharacter,
+		outputHandle,
+		offset startLogo6,
+		lengthof startLogo6,
+		startPos,
+		offset bytesWritten
+    inc startPos.Y
+    INVOKE WriteConsoleOutputAttribute,
+		outputHandle,
+		offset startColor,
+		lengthof startColor,
+		startPos,
+		offset count
+    INVOKE WriteConsoleOutputCharacter,
+		outputHandle,
+		offset startLogo7,
+		lengthof startLogo7,
+		startPos,
+		offset bytesWritten
+    inc startPos.Y
+    INVOKE WriteConsoleOutputAttribute,
+		outputHandle,
+		offset startColor,
+		lengthof startColor,
+		startPos,
+		offset count
+    INVOKE WriteConsoleOutputCharacter,
+		outputHandle,
+		offset startLogo8,
+		lengthof startLogo8,
+		startPos,
+		offset bytesWritten
+    inc startPos.Y
+    INVOKE WriteConsoleOutputAttribute,
+		outputHandle,
+		offset startColor,
+		lengthof startColor,
+		startPos,
+		offset count
+    INVOKE WriteConsoleOutputCharacter,
+		outputHandle,
+		offset startLogo9,
+		lengthof startLogo9,
+		startPos,
+		offset bytesWritten
+    inc startPos.Y
+    q:
+    call ReadChar
+    .if al=='g'
     call Clrscr
+    .else
+        jmp q
+    .endif
+
 
 	;繪製初始友軍
 	INVOKE WriteConsoleOutputAttribute,
@@ -125,44 +278,58 @@ main proc
 	;繪製初始敵人
 	INVOKE WriteConsoleOutputAttribute,
 		outputHandle,
-		ADDR enemyAttr,
+		offset enemyAttr,
 		sizeof enemyTop,
 		enemyPosition,
-		ADDR cellsWritten
+		offset cellsWritten
 	INVOKE WriteConsoleOutputCharacter,
 		outputHandle,
-		ADDR enemyTop,
+		offset enemyTop,
 		sizeof enemyTop,
 		enemyPosition,
-		ADDR count
+		offset count
 	inc enemyPosition.Y
 	INVOKE WriteConsoleOutputAttribute,
 		outputHandle,
-		ADDR enemyAttr,
+		offset enemyAttr,
 		sizeof enemyBody,
 		enemyPosition,
-		ADDR cellsWritten
+		offset cellsWritten
 	INVOKE WriteConsoleOutputCharacter,
 		outputHandle,
-		ADDR enemyBody,
+		offset enemyBody,
 		sizeof enemyBody,
 		enemyPosition,
-		ADDR count
+		offset count
 	inc enemyPosition.Y
 	INVOKE WriteConsoleOutputAttribute,
 		outputHandle,
-		ADDR enemyAttr,
+		offset enemyAttr,
 		sizeof enemyBottom,
 		enemyPosition,
-		ADDR cellsWritten
+		offset cellsWritten
 	INVOKE WriteConsoleOutputCharacter,
 		outputHandle,
-		ADDR enemyBottom,
+		offset enemyBottom,
 		sizeof enemyBottom,
 		enemyPosition,
-		ADDR count
+		offset count
 
 	sub enemyPosition.Y, 2										;y軸調回初始位置
+
+	;繪製初始血量
+	INVOKE WriteConsoleOutputAttribute,
+		outputHandle,
+		offset hpAttr,
+		sizeof hp,
+		hpPosition,
+		offset cellsWritten
+	INVOKE WriteConsoleOutputCharacter,
+		outputHandle,
+		offset hp,
+		sizeof hp,
+		hpPosition,
+		offset count
 
 control:
 	.if input==VK_ESCAPE										;esc強制結束
@@ -183,6 +350,44 @@ INVOKE AllyRevive												;呼叫閃爍結束
 exit
 main endp
 
+;顯示血量
+WriteHP proc
+	INVOKE WriteConsoleOutputAttribute,
+		outputHandle,
+		offset hpAttr,
+		sizeof hp,
+		hpPosition,
+		offset cellsWritten
+	INVOKE WriteConsoleOutputCharacter,
+		outputHandle,
+		offset hp,
+		sizeof hp,
+		hpPosition,
+		offset count
+	INVOKE SetConsoleCursorPosition,
+        outputHandle,
+		allyhpPosition
+	mov eax, allyHP
+	call WriteDec
+
+	add hpPosition.X, 7
+	INVOKE WriteConsoleOutputAttribute,     ;讓1000的最後一個0消失
+		outputHandle,
+		offset hpDisAttr,
+		sizeof hp,
+		hpPosition,
+		offset cellsWritten
+	INVOKE WriteConsoleOutputCharacter,
+		outputHandle,
+		offset hp,
+		sizeof hp,
+		hpPosition,
+		offset count
+	sub hpPosition.X, 7
+
+	ret
+WriteHP endp
+
 ;友方偵測射擊
 DetectShoot proc
     INVOKE Sleep,15
@@ -195,30 +400,106 @@ DetectShoot proc
 DetectShoot endp
 
 ;友方子彈射擊
-BulletShoot proc,
+BulletShoot proc USES eax edx ecx ebx,
 	planeX:word,
-	planeY:word  						;傳入allyPosition
+	planeY:word                ;要傳planeX,planeY
 
     mov ax,planeX
     mov dx,planeY
-	add ax,5 							;座標移動到子彈該出現的位置
-	sub dx,1   							;同上
+	add ax,5                   ;座標橋回子彈該出現的位置
+	sub dx,4                   ;同上
     mov bulletPos.X,ax
     mov bulletPos.Y,dx
 
+	;確認敵方有沒有被我方子彈射中
+	mov cx, enemyPosition.X
+	mov bx, enemyPosition.Y     ;enemyPosition存入暫存器
+	inc bx
+    sub cx, bulletPos.X         ;cx用於判斷子彈擊中敵方
+
 bulletup:
-	.IF bulletPos.Y!=0
-		INVOKE BulletMove  			 	;子彈向上移動
-		jmp bulletup					;迴圈讓直到子彈飛到底
-	.ELSE
+	.if bulletPos.Y!=0
+		INVOKE BulletMove       ;子彈向上移動
+		jmp checkX
+	.else
 		jmp endshoot
-	.ENDIF
+	.endif
+checkX:
+	.if cx==0
+		jmp checkY
+	.elseif cx==-1
+		jmp checkY
+	.elseif cx==-2
+		jmp checkY
+	.elseif cx==-3
+		jmp checkY
+	.elseif cx==-4
+		jmp checkY
+	.else
+		jmp bulletup
+	.endif
+checkY:
+	.if bulletPos.Y==bx
+		jmp enemyDisappear
+	.else
+		jmp bulletup
+	.endif
+enemyDisappear:
+
+	;若被射中，enemy消失
+	INVOKE WriteConsoleOutputAttribute,
+		outputHandle,
+		offset enemyDisappearAttr,
+		sizeof enemyTop,
+		enemyPosition,
+		offset cellsWritten
+
+	INVOKE WriteConsoleOutputCharacter,
+		outputHandle,
+		offset enemyTop,
+		sizeof enemyTop,
+		enemyPosition,
+		offset count
+
+	inc enemyPosition.Y
+	INVOKE WriteConsoleOutputAttribute,
+		outputHandle,
+		offset enemyDisappearAttr,
+		sizeof enemyBody,
+		enemyPosition,
+		offset cellsWritten
+
+	INVOKE WriteConsoleOutputCharacter,
+		outputHandle,
+		offset enemyBody,
+		sizeof enemyBody,
+		enemyPosition,
+		offset count
+
+	inc enemyPosition.Y
+	INVOKE WriteConsoleOutputAttribute,
+		outputHandle,
+		offset enemyDisappearAttr,
+		sizeof enemyBottom,
+		enemyPosition,
+		offset cellsWritten
+
+	INVOKE WriteConsoleOutputCharacter,
+		outputHandle,
+		offset enemyBottom,
+		sizeof enemyBottom,
+		enemyPosition,
+		offset count
+
+	INVOKE Sleep,500                  ;等待
+	mov enemyPosition.Y, -1           ;enemy橋回正確位置
+
 endshoot:
     ret
 BulletShoot endp
 
 ;友方子彈移動
-BulletMove proc
+BulletMove proc USES eax ebx ecx edx
 	;子彈繪製
 	INVOKE WriteConsoleOutputAttribute,
        outputHandle,
@@ -258,7 +539,7 @@ BulletMove endp
 AllyRevive proc uses ecx
 INVOKE GetStdHandle, STD_OUTPUT_HANDLE
     mov outputHandle, eax
-    call Clrscr
+    ;call Clrscr
 
     mov allyCondition,0;				;沒用到
 	mov ecx,3
@@ -640,42 +921,42 @@ MovLeft endp
 EnemyMove proc
 	INVOKE WriteConsoleOutputAttribute,
 		outputHandle,
-		ADDR enemyDisappearAttr,
+		offset enemyDisappearAttr,
 		sizeof enemyTop,
 		enemyPosition,
-		ADDR cellsWritten
+		offset cellsWritten
 	INVOKE WriteConsoleOutputCharacter,
 		outputHandle,
-		ADDR enemyTop,
+		offset enemyTop,
 		sizeof enemyTop,
 		enemyPosition,
-		ADDR count
+		offset count
 	inc enemyPosition.Y
 	INVOKE WriteConsoleOutputAttribute,
 		outputHandle,
-		ADDR enemyDisappearAttr,
+		offset enemyDisappearAttr,
 		sizeof enemyBody,
 		enemyPosition,
-		ADDR cellsWritten
+		offset cellsWritten
 	INVOKE WriteConsoleOutputCharacter,
 		outputHandle,
-		ADDR enemyBody,
+		offset enemyBody,
 		sizeof enemyBody,
 		enemyPosition,
-		ADDR count
+		offset count
 	inc enemyPosition.Y    ; next line
 	INVOKE WriteConsoleOutputAttribute,
 		outputHandle,
-		ADDR enemyDisappearAttr,
+		offset enemyDisappearAttr,
 		sizeof enemyBottom,
 		enemyPosition,
-		ADDR cellsWritten
+		offset cellsWritten
 	INVOKE WriteConsoleOutputCharacter,
 		outputHandle,
-		ADDR enemyBottom,
+		offset enemyBottom,
 		sizeof enemyBottom,
 		enemyPosition,
-		ADDR count
+		offset count
 
 	invoke DetectShoot
 	invoke DetectMove
@@ -683,42 +964,42 @@ EnemyMove proc
 
 	INVOKE WriteConsoleOutputAttribute,
 		outputHandle,
-		ADDR enemyAttr,
+		offset enemyAttr,
 		sizeof enemyTop,
 		enemyPosition,
-		ADDR cellsWritten
+		offset cellsWritten
 	INVOKE WriteConsoleOutputCharacter,
 		outputHandle,
-		ADDR enemyTop,
+		offset enemyTop,
 		sizeof enemyTop,
 		enemyPosition,
-		ADDR count
+		offset count
 	inc enemyPosition.Y
 	INVOKE WriteConsoleOutputAttribute,
 		outputHandle,
-		ADDR enemyAttr,
+		offset enemyAttr,
 		sizeof enemyBody,
 		enemyPosition,
-		ADDR cellsWritten
+		offset cellsWritten
 	INVOKE WriteConsoleOutputCharacter,
 		outputHandle,
-		ADDR enemyBody,
+		offset enemyBody,
 		sizeof enemyBody,
 		enemyPosition,
-		ADDR count
+		offset count
 	inc enemyPosition.Y
 	INVOKE WriteConsoleOutputAttribute,
 		outputHandle,
-		ADDR enemyAttr,
+		offset enemyAttr,
 		sizeof enemyBottom,
 		enemyPosition,
-		ADDR cellsWritten
+		offset cellsWritten
 	INVOKE WriteConsoleOutputCharacter,
 		outputHandle,
-		ADDR enemyBottom,
+		offset enemyBottom,
 		sizeof enemyBottom,
 		enemyPosition,
-		ADDR count
+		offset count
 
     sub enemyPosition.Y,2
 
@@ -735,16 +1016,16 @@ EnemyAttack proc USES eax edx ecx ebx ,enemyX:word,enemyY:word
     mov AttackPos.X,ax
     mov AttackPos.Y,dx				;位置存入AttackPos
 
-	mov bx,allyPosition.Y
-					;cx用於判斷子彈擊中飛機
 keep:
+	.if AttackPos.Y==20
+		mov bx,allyPosition.Y
+		mov cx,allyPosition.X			;allyPosition存入暫存器
+		sub cx,AttackPos.X				;cx用於判斷子彈擊中飛機
+	.endif
 	.IF AttackPos.Y!=40				;子彈最終位置
 		INVOKE AttackMove			;呼叫子彈移動
-
+		jmp LOO
 	.ELSE
-        mov cx,allyPosition.X			;allyPosition存入暫存器
-        sub cx,AttackPos.X
-        jmp LOO
 		jmp endAttack
 	.ENDIF
 LOO:								;判斷子彈擊中飛機X軸
@@ -777,6 +1058,8 @@ LOO:								;判斷子彈擊中飛機X軸
 	.endif
 enddd:
 	.if AttackPos.Y==bx			;進一步判斷子彈擊中飛機Y軸
+		sub allyHP,50           ;擊中，減少血量
+		INVOKE WriteHP          ;顯示血量
 		jmp endddd
 	.else
 		jmp keep
